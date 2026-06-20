@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { openDB } from 'idb';
 
-// 📅 최초 접속 시에만 들어가는 초기 스케줄 기본 데이터
+// 📅 최초 접속 시에만 들어가는 초기 스케줄 기본 데이터 (6월 20회차 + 7월 28회차)
 const defaultInitialData = [
   // --- 6월 일정 ---
   { id: 1, month: 6, date: "06.16", day: "화", time: "20:00", actor1: "임준혁", actor2: "정우연", mainActor: "원태민", seat: "" },
@@ -96,7 +96,7 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalInputs, setModalInputs] = useState({
     musicalName: '뮤지컬 사의 찬미 사찬', 
-    transferSeat: '', // ⭐️ [독립 분리] 복사할 때 따로 입력할 양도용 좌석 상태
+    transferSeat: '', 
     discountType: '재관할',
     price: '55,900',
     notice: '증빙 필요, 찾아드릴 수 있습니다',
@@ -230,18 +230,16 @@ export default function App() {
   };
 
   const handleReset = async () => {
-    if (window.confirm('정말 최초 기본 스케줄 상태로 되돌리시겠습니까?')) {
+    if (window.confirm('정말 최초 기본 스케줄 상태로 되돌리시겠습니까? \n(주의: 새로 추가하신 데이터나 직접 수정하신 내역이 새로고침 됩니다)')) {
       const db = await initDB();
       await db.clear(STORE_NAME);
       loadInitialData();
-      alert('초기화가 완료되었습니다.');
+      alert('새로운 전체 스케줄 데이터로 초기화가 완료되었습니다! ✨');
     }
   };
 
-  // 복사 버튼 클릭 시 팝업 열기
   const handleOpenCopyModal = (item) => {
     setSelectedItem(item);
-    // 팝업 열 때 기본값으로 스케줄 리스트에 적혀있던 정산용 좌석을 일단 띄워주되, 빈 값이면 빈칸으로 채워둠
     setModalInputs(prev => ({
       ...prev,
       transferSeat: item.seat || ''
@@ -254,12 +252,9 @@ export default function App() {
     setModalInputs(prev => ({ ...prev, [name]: value }));
   };
 
-  // 모달 내 최종 복사 실행 함수
   const executeFinalCopy = () => {
     if (!selectedItem) return;
     const item = selectedItem;
-    
-    // ⭐️ 정산용 좌석이 아닌, 사용자가 팝업창에서 직접 입력한 양도용 좌석(transferSeat)을 가져옴
     const finalSeat = modalInputs.transferSeat.trim() === "" ? "미입력 좌석" : modalInputs.transferSeat.toUpperCase();
 
     const copyText = `${modalInputs.musicalName} 양도\n${item.date}(${item.day}) ${item.time}\n${item.actor1} ${item.actor2} ${item.mainActor}\n${finalSeat}\n${modalInputs.discountType} ${modalInputs.price}(${modalInputs.notice})\n\n${modalInputs.twitterTag}`;
@@ -288,10 +283,10 @@ export default function App() {
   });
 
   return (
-    <div className="p-4 md:p-6 flex flex-col items-center font-sans max-w-xl mx-auto relative min-h-screen pb-24">
+    <div className="p-3 md:p-6 flex flex-col items-center font-sans max-w-xl mx-auto relative min-h-screen pb-24 overflow-x-hidden">
       
       {/* 🚢 헤더 및 제어 버튼 */}
-      <header className="w-full flex flex-col gap-2 mb-6">
+      <header className="w-full flex flex-col gap-2 mb-5">
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold text-emerald-800">🚢 사의찬미 정산 & 관리</h1>
           <button onClick={() => { setShowForm(!showForm); setEditingId(null); }} className="px-3 py-1 bg-teal-600 text-white rounded text-xs font-bold">
@@ -311,9 +306,9 @@ export default function App() {
         </div>
       </header>
 
-      {/* ➕ 스케줄 추가 / 수정 입력 폼 (정산용 좌석 입력칸) */}
+      {/* ➕ 스케줄 추가 / 수정 입력 폼 */}
       {showForm && (
-        <form onSubmit={handleFormSubmit} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 flex flex-col gap-3">
+        <form onSubmit={handleFormSubmit} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-4 mb-5 flex flex-col gap-3">
           <h3 className="font-bold text-slate-700 text-sm">{editingId ? '✏️ 스케줄 정보 수정하기' : '📅 새로운 회차 등록하기'}</h3>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <select name="month" value={formData.month} onChange={handleInputChange} className="p-2 border rounded">
@@ -376,7 +371,7 @@ export default function App() {
       </section>
 
       {/* 📅 월별 스케줄 출력 리스트 */}
-      <main className="w-full flex flex-col gap-2.5 mb-8 text-sm">
+      <main className="w-full flex flex-col gap-2.5 mb-6 text-sm">
         {[6, 7].map(m => {
           const monthSchedules = filteredSchedules.filter(item => item.month === m);
           if (monthSchedules.length === 0) return null;
@@ -386,22 +381,41 @@ export default function App() {
               <div className={`p-2.5 text-white font-bold text-center text-xs tracking-wider ${m === 6 ? 'bg-teal-600' : 'bg-emerald-700'}`}>{m}월 일정</div>
               <div className="divide-y divide-slate-100">
                 {monthSchedules.map((item) => (
-                  <div key={item.id} className="p-2.5 flex items-center justify-start hover:bg-slate-50 transition-colors w-full overflow-x-auto">
-                    <div className="flex flex-col items-start w-[55px] flex-shrink-0 mr-3">
-                      <span className="font-bold text-slate-700 text-xs tabular-nums">{item.date}({item.day})</span>
-                      <span className="text-[9px] text-slate-400 bg-slate-100 px-1 rounded mt-0.5 tabular-nums">{item.time}</span>
+                  <div key={item.id} className="p-2 flex items-center justify-start hover:bg-slate-50 transition-colors w-full">
+                    
+                    {/* 1. 날짜 및 시간 */}
+                    <div className="flex flex-col items-start w-[50px] flex-shrink-0 mr-2 pl-1">
+                      <span className="font-bold text-slate-700 text-xs tabular-nums">{item.date}</span>
+                      <span className="text-[9px] text-slate-400 bg-slate-100 px-0.5 rounded mt-0.5 tabular-nums">{item.time}</span>
                     </div>
-                    <div className="text-slate-500 text-xs w-[52px] flex-shrink-0 truncate text-left font-medium mr-1">{item.actor1}</div>
-                    <div className="text-slate-500 text-xs w-[52px] flex-shrink-0 truncate text-left font-medium mr-3">{item.actor2}</div>
-                    <div className={`text-xs font-bold w-[45px] text-center flex-shrink-0 mr-3 ${item.mainActor === '이진혁' ? 'text-purple-600' : 'text-slate-600'}`}>{item.mainActor}</div>
-                    <div className="w-[50px] flex-shrink-0">
-                      <input type="text" placeholder="정산좌석" value={item.seat || ""} onChange={(e) => handleSeatChange(item.id, e.target.value)} className="w-full p-1 text-[10px] border border-purple-200 text-purple-700 rounded text-center font-bold uppercase placeholder:font-normal placeholder:text-[9px] h-6" title="정산용 실관람 좌석" />
+                    
+                    {/* 2. 첫 번째 배우 */}
+                    <div className="text-slate-500 text-[11px] w-[42px] flex-shrink-0 truncate text-left font-medium mr-0.5">
+                      {item.actor1}
                     </div>
-                    <div className="flex gap-0.5 flex-shrink-0 ml-auto">
-                      <button onClick={() => handleOpenCopyModal(item)} className="px-1.5 py-1 text-[10px] bg-amber-500 text-white rounded font-medium h-6 flex items-center">복사</button>
-                      <button onClick={() => handleEditStart(item)} className="px-1.5 py-1 text-[10px] bg-slate-500 text-white rounded font-medium h-6 flex items-center">수정</button>
-                      <button onClick={() => handleScheduleDelete(item.id)} className="px-1.5 py-1 text-[10px] bg-red-400 text-white rounded font-medium h-6 flex items-center">삭제</button>
+                    
+                    {/* 3. 두 번째 배우 */}
+                    <div className="text-slate-500 text-[11px] w-[42px] flex-shrink-0 truncate text-left font-medium mr-2">
+                      {item.actor2}
                     </div>
+                    
+                    {/* 4. 세 번째 주연 배우 */}
+                    <div className={`text-[11px] font-bold w-[40px] text-center flex-shrink-0 mr-2 ${item.mainActor === '이진혁' ? 'text-purple-600' : 'text-slate-600'}`}>
+                      {item.mainActor}
+                    </div>
+                    
+                    {/* 5. 정산 좌석 인풋창 */}
+                    <div className="w-[45px] flex-shrink-0 mr-2">
+                      <input type="text" placeholder="좌석" value={item.seat || ""} onChange={(e) => handleSeatChange(item.id, e.target.value)} className="w-full p-0.5 text-[10px] border border-purple-200 text-purple-700 rounded text-center font-bold uppercase placeholder:font-normal placeholder:text-[9px] h-6" />
+                    </div>
+                    
+                    {/* 6. 버튼 그룹 */}
+                    <div className="flex gap-x-1 flex-1 justify-end pr-1 min-w-[105px]">
+                      <button onClick={() => handleOpenCopyModal(item)} className="flex-1 max-w-[36px] text-center py-1 text-[9px] bg-amber-500 text-white rounded font-medium h-6 flex items-center justify-center">복사</button>
+                      <button onClick={() => handleEditStart(item)} className="flex-1 max-w-[36px] text-center py-1 text-[9px] bg-slate-500 text-white rounded font-medium h-6 flex items-center justify-center">수정</button>
+                      <button onClick={() => handleScheduleDelete(item.id)} className="flex-1 max-w-[36px] text-center py-1 text-[9px] bg-red-400 text-white rounded font-medium h-6 flex items-center justify-center">삭제</button>
+                    </div>
+
                   </div>
                 ))}
               </div>
@@ -410,7 +424,7 @@ export default function App() {
         })}
       </main>
 
-      {/* 🪑 실시간 내 좌석 배치도 시각화 (정산용 좌석 기반) */}
+      {/* 🪑 실시간 내 좌석 배치도 시각화 */}
       <section className="w-full bg-slate-900 text-white rounded-xl p-4 flex flex-col items-center shadow-md overflow-x-auto">
         <div className="w-full text-center py-1 bg-slate-800 text-slate-400 rounded font-black tracking-widest text-xs mb-3">S T A G E</div>
         
@@ -462,38 +476,26 @@ export default function App() {
         </div>
       </section>
 
-      {/* 📋 커스텀 양도 문구 팝업 모달 (양도용 좌석 분리 입력) */}
+      {/* 📋 커스텀 양도 문구 팝업 모달 */}
       {isModalOpen && selectedItem && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
-            
             <div className="bg-amber-500 p-4 text-white flex justify-between items-center">
               <div>
                 <h3 className="font-extrabold text-sm flex items-center gap-1">📋 커스텀 양도 문구 생성</h3>
-                <p className="text-[10px] text-amber-100 mt-0.5">{selectedItem.date}({selectedItem.day}) {selectedItem.time} 회차</p>
+                <p className="text-[10px] text-amber-100 mt-0.5">{selectedItem.date} {selectedItem.time} 회차</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="text-xl font-bold opacity-80 hover:opacity-100 transition-opacity">×</button>
             </div>
-
             <div className="p-4 flex flex-col gap-3.5 text-xs text-slate-700 bg-slate-50/50">
               <div className="flex flex-col gap-1">
                 <label className="font-bold text-slate-500 text-[11px]">작품명 및 헤더</label>
                 <input type="text" name="musicalName" value={modalInputs.musicalName} onChange={handleModalInputChange} className="p-2 border border-slate-200 rounded-lg w-full bg-white focus:outline-none focus:border-amber-500 font-medium" />
               </div>
-
-              {/* ⭐️ [독립 분리] 양도 전용 좌석 입력칸 */}
               <div className="flex flex-col gap-1">
                 <label className="font-bold text-amber-600 text-[11px]">🕊️ 양도할 좌석 직접 입력</label>
-                <input 
-                  type="text" 
-                  name="transferSeat" 
-                  placeholder="예: A-11, OP 2열 중앙 등 자유롭게 작성" 
-                  value={modalInputs.transferSeat} 
-                  onChange={handleModalInputChange} 
-                  className="p-2 border border-amber-300 bg-amber-50/30 rounded-lg w-full focus:outline-none focus:border-amber-500 font-bold text-amber-700 uppercase" 
-                />
+                <input type="text" name="transferSeat" placeholder="예: A-11, OP 2열 중앙 등 자유롭게 작성" value={modalInputs.transferSeat} onChange={handleModalInputChange} className="p-2 border border-amber-300 bg-amber-50/30 rounded-lg w-full focus:outline-none focus:border-amber-500 font-bold text-amber-700 uppercase" />
               </div>
-
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1">
                   <label className="font-bold text-slate-500 text-[11px]">할인 종류</label>
@@ -513,17 +515,15 @@ export default function App() {
                 <input type="text" name="twitterTag" value={modalInputs.twitterTag} onChange={handleModalInputChange} className="p-2 border border-slate-200 rounded-lg w-full bg-white focus:outline-none focus:border-amber-500 font-mono" />
               </div>
             </div>
-
             <div className="p-3 bg-slate-100 border-t border-slate-200 flex gap-2">
               <button onClick={() => setIsModalOpen(false)} className="flex-1 py-2 bg-slate-300 text-slate-700 font-bold rounded-xl">취소</button>
               <button onClick={executeFinalCopy} className="flex-1 py-2 bg-amber-500 text-white font-extrabold rounded-xl shadow-md active:scale-95 transition-all">📋 문구 복사하기</button>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* 🚀 우측 하단 고정 플로팅 좌석저장 버튼 (정산 데이터 일괄 영구 저장) */}
+      {/* 🚀 우측 하단 고정 플로팅 좌석저장 버튼 */}
       <div className="fixed bottom-6 right-6 z-50 shadow-lg">
         <button onClick={handleAllSave} className="w-16 h-16 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-full flex flex-col items-center justify-center font-bold transition-all shadow-md group border-2 border-white" title="모든 좌석 정보 저장">
           <span className="text-xl">💾</span>
